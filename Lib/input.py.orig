@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""Input device helper
+
+Input device helper for  /dev/input/event* devices.
+Useful for many USB input devices, including:
+keyboards, mice, touchscreen, joysticks
+
+This is in the experimentation stage
+https://www.kernel.org/doc/Documentation/input/event-codes.txt
+http://www.infradead.org/~mchehab/kernel_docs_pdf/linux-input.pdf
+https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+"""
+import ctypes
+import os
+import sys
+import struct
+import collections
+
+EV_SYN = 0x00
+EV_KEY = 0x01
+EV_REL = 0x02
+EV_ABS = 0x03
+EV_MSC = 0x04
+EV_SW = 0x05
+EV_LED = 0x11
+EV_SND = 0x12
+EV_REP = 0x14
+EV_FF = 0x15
+EV_PWR = 0x16
+EV_FF_STATUS = 0x17
+EV_MAX = 0x1f
+
+
+def _ToStringMap(prefix):
+    return {val: var
+            for var, val in globals().items()
+            if var.startswith(prefix)}
+
+
+EV_TO_STRING_MAP = _ToStringMap("EV_")
+
+
+
+Event = collections.namedtuple('Event', ['sec', 'usec', 'type', 'code', 'value'])
+
+def BytesToEvent(bytes: bytes) -> Event:
+     return Event(*struct.unpack(_EVENT_FORMAT, bytes))
+
+def EventToBytes(event: Event) -> bytes:
+    return
+
+libc = ctypes.CDLL('libc.so.6')
+if sys.maxsize > 1 << 32:
+    _EVENT_FORMAT = "@QQhhi"
+else:
+    _EVENT_FORMAT = "@IIhhi"
+
+_EVENT_LENGTH = struct.calcsize(_EVENT_FORMAT)
+
+
+def _ToBits(i: int):
+    print ("Bits", i)
+    out = set()
+    n = 0
+    while i != 0:
+            if i & 1:
+                out.add(n)
+            n += 1
+            i >>= 1
+    return out
+
+
+class HID(object):
+
+    def __init__(self, path):
+        self.properties = {}
+        self.capabilities = {}
+        self.state = {}
+        self.new_events = {}
+        no = path.replace("/dev/input/event", "")
+        for line in open("/sys/class/input/event%s/device/uevent" % no).readlines():
+            tag, val = line.split("=", 1)
+            val = val.strip()
+            self.properties[tag] = val
+            if tag == "EV":
+                for c in _ToBits(int(val, 16)):
+                    if c not in self.capabilities:
+                        self.capabilities[c] = None
+            elif tag == "LED":
+                self.capabilities[EV_LED] = _ToBits(int(val, 16))
+            elif tag == "MSC":
+                self.capabilities[EV_MSC] = _ToBits(int(val, 16))
+
+        print (self.properties)
+        print (self.capabilities)
+
+    def process_event(self, event: Event):
+        k = (event.type, event.code)
+        self.state[k] = event
+        self.new_events[k] = event
+
+
+if __name__ == "__main__":
+    import sys
+
+
+    def DumpEvents(path):
+        hid = HID(path)
+        fd = os.open(path, os.O_RDWR, 0o666)
+
+        while True:
+            bytes = os.read(fd, _EVENT_LENGTH)
+            event = BytesToEvent(bytes)
+            print(event)
+            hid.process_event(event)
+            # print ("\n" * 20)
+            # for k, v in sorted(hid.state.items()):
+            #    print (hid.code_type_to_name[k][0], v.value)
+
+
+    if len(sys.argv) == 2:
+        print("dumping events for ", sys.argv[1])
+        DumpEvents(sys.argv[1])
+    else:
+        pass
+        if len(evdev.list_devices()) == 0:
+            print("no devices found - maybe you need to be root")
+        else:
+            print("Not device path specified. Available devices:")
+
+        for path in evdev.list_devices():
+            device = evdev.InputDevice(path)
+            print(path, device.name, device.phys, list(device.capabilities(True).keys()))
