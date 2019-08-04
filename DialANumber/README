@@ -1,0 +1,54 @@
+
+b8:27:eb:9b:cb:6e
+192.168.0.20 
+
+/tftpboot/f79bcb6e/start.elf
+
+
+https://pinout.xyz/
+
+Sound:
+https://learn.adafruit.com/adafruit-max98357-i2s-class-d-mono-amp/overview
+
+
+Amp Vin to Raspbery Pi 5V or 3.3V  (3.3V might help stay below 500mA)
+Amp GND to Raspbery Pi GND
+Amp DIN to Raspbery Pi #21
+Amp BCLK to Raspbery Pi #18
+Amp LRCLK to Raspbery Pi #19
+
+
+We done want to load kernel module snd_bcm2835
+
+Video:
+
+Note: luma libs are installed with pip3
+
+apt install python3-pip
+apt install python3-pil
+apt-get install libopenjp2-7-dev
+
+luma.core (1.1.0)
+luma.lcd (1.0.2)
+luma.oled (2.3.0)
+
+change to /etc/asound.conf
+
+
+18 GPIO 24 dc
+20 GND
+22 GPIO 25 res 
+24 GPIO 08 cs
+
+17 VCC
+19 GPIO 10 mosi
+21 GPIO 09 ---
+23 GPIO 11 clk
+
+
+
+dialer
+
+green ground     (14 or 15)
+orange trigger   (15 or 14)
+yellow dial 
