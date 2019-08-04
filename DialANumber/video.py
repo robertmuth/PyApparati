@@ -9,7 +9,7 @@ import logging
 
 from PIL import Image, ImageDraw, ImageFont
 
-import PiLib.dali_clock as dali_clock
+import Pytorinox.morph as morph
 
 # ("tiny.ttf", 6),
 # ("ProggyTiny.ttf", 16),
@@ -42,12 +42,12 @@ class Video:
     def __init__(self, device, w, h):
         self._device = device
         self._last_screen = None
-        self._font = ImageFont.truetype("Fonts/code2000.ttf", 30)
-        self._menu_font = ImageFont.truetype("Fonts/code2000.ttf", 12)
-        font_dali = dali_clock.LoadMorphFont("PiLib/DaliFonts/", "E.xbm")
-        self._dali_string = dali_clock.DaliString(*font_dali)
-        font_clock = dali_clock.LoadMorphFont("PiLib/DaliFonts/", "G.xbm")
-        self._dali_clock = dali_clock.DaliClock(*font_clock, "%H:%M")
+        self._font = ImageFont.truetype("../Fonts/code2000.ttf", 30)
+        self._menu_font = ImageFont.truetype("../Fonts/code2000.ttf", 12)
+        font_dali = morph.LoadMorphFont("Pytorinox/DaliFonts/", "E.xbm")
+        self._dali_string = morph.DaliString(*font_dali)
+        font_clock = morph.LoadMorphFont("Pytorinox/DaliFonts/", "G.xbm")
+        self._dali_clock = morph.DaliClock(*font_clock, "%H:%M")
         self._image = Image.new("RGB", (w, h))
         self._draw = ImageDraw.Draw(self._image)
 
@@ -100,7 +100,7 @@ class Video:
         self._device.show(self._image)        
             
 if __name__ == "__main__":
-    import PiLib.framebuffer as framebuffer
+    import Pytorinox.framebuffer as framebuffer
     import time
     
     def main():
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         video.Message("Welcome", "0123456789012345", "0123456789012345")
 
         chars = [" ", "0", " ", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-        font, font_dim = dali_clock.LoadMorphFont("PiLib/DaliFonts/", "E.xbm")
+        font, font_dim = morph.LoadMorphFont("Pytorinox/DaliFonts/", "E.xbm")
         for n, c1 in enumerate(chars):
             c2 = chars[(n + 1) % len(chars)]
             for step in range(21):

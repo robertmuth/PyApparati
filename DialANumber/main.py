@@ -7,11 +7,12 @@ import glob
 import signal
 import datetime
 
-import PiLib.audio_alsa as audio
-import PiLib.bme280 as bme280
-import PiLib.rotary_dial as rotary_dial
-import PiLib.framebuffer as framebuffer
+import Pytorinox.audio_alsa as audio
+import Pytorinox.bme280 as bme280
+import Lib.rotary_dial as rotary_dial
+import Pytorinox.framebuffer as framebuffer
 
+import sound_clips
 import video
 import webserver
 
@@ -36,75 +37,14 @@ DEFAULT_ACTION = (None, None, None)
 # 8	TUV
 # 9	WXYZ (on older telephones, WXY)
 
-c2n = {
-    "a": 2,
-    "b": 2,
-    "c": 2,    
-    "d": 3,    
-    "e": 3,    
-    "f": 3,
-    "g": 4,    
-    "h": 4,    
-    "i": 4,    
-    "j": 5,    
-    "k": 5,    
-    "l": 5,    
-    "m": 6,    
-    "n": 6,    
-    "o": 6,    
-    "p": 7,    
-    "q": 7,    
-    "r": 7,    
-    "s": 7,    
-    "t": 8,    
-    "u": 8,    
-    "v": 8,    
-    "w": 9,    
-    "x": 9,
-    "y": 9,    
-    "z": 9,    
-}
-
-def C2N(s):
-    return tuple([c2n[c] for c  in s.lower() ])
-
-def Radio(a, b):
-    return (a, "Radio", b)
-
-def ShutdeonNow():
-    return (a, "Radio", b)
-
 ACTION_MAP = {
-    (1,): ("", "Kill", None),
-    (0, 0): ("Shutdown", "shutdown", None),
-    (0,): Radio("SomaFM:SecretAgent", "http://somafm.com/secretagent130.pls"),
-    C2N("N"): Radio("WNYC:fm:", "http://www.wnyc.org/stream/wnyc-fm939/mp3.pls"),
-    C2N("J"): Radio("WBGO:Jazz", "http://wbgo.streamguys.net/listen.pls"),
-    C2N("C"): Radio("KUAT:Classic", "http://streaming.azpm.org/kuat192.mp3.m3u"),
-    #
-    (9,): Radio("BBC: News", "http://bbcwssc.ic.llnwd.net/stream/bbcwssc_mp1_ws-eieuk"),
-    #
-    #
-    (8,): Radio("KCSM:Jazz", "https://kcsm.org/KCSM-iTunes-SNS.pls"),
-    #
-    C2N("P"): Radio("Paradise:", "http://www.radioparadise.com/musiclinks/rp_192.m3u"),
-    C2N("D"): Radio("SomaFM:DroneZone", "http://somafm.com/dronezone130.pls"),
-    C2N("G"): Radio("SomaFM:GroveSalad", "http://somafm.com/startstream=groovesalad130.pls"),
+     (0, 0): ("Shutdown", "shutdown", None),
 }
 
 
 MENU = [
-    "1 <stop>",
-    "2 KUAT",
-    "3 Drone",
-    "4 Groove",
-    "5 WBGO",
-    "6 WNYC",
-    "7 Paradise",
-    "8 KCSM",
-    "9 BBC",
-    "0 Secret",
 ]
+
  
 
 def DateString():
@@ -113,19 +53,11 @@ def DateString():
     
 class Task:
 
-    def __init__(self):
+    def __init__(self, clips):
         self._active_task = None
+        self.clips = clips
         self.message = None
-    def Kill(self):
-        if self._active_task:
-            os.kill(self._active_task, signal.SIGKILL)
-            self._active_task = None
         
-    def Radio(self, url):
-        self.Kill()
-        self._active_task = os.spawnlp(os.P_NOWAIT, "cvlc", "-v", url)
-        logging.info("JOB: %d", self._active_task)
-
     def Shutdown(self):
         os.system("sudo shutdown now")
         logging.info("Shutting down")
@@ -138,10 +70,9 @@ class Task:
             return
 
         print ("ACTION: ", action)
-        if action == "Kill":
-            self.Kill()
-        elif action == "Radio":
-            self.Radio(args)
+        if action == "Clip":
+            self.clips.PlayRandom(args)
+
         elif action == "shutdown":
             self.Shutdown()
 
@@ -150,8 +81,8 @@ class Task:
 
 class Actions:
 
-    def __init__(self, video, audio, sensor):
-        self.task = Task()
+    def __init__(self, video, audio, sensor, clips):
+        self.task = Task(clips)
         self.video = video
         self.audio = audio
         self.sensor = sensor
@@ -237,8 +168,12 @@ class FPS:
         self.measure.pop(0)
         self.measure.append(now)
         
-def main(video, audio, sensor):
-    act = Actions(video, audio, sensor)
+def main(video, audio, sensor, clips):
+    global MENU, ACTION_MAP
+    act = Actions(video, audio, sensor, clips)
+    for n, g in enumerate(clips.Genres()):
+        MENU.append("%d %s" % (n+1, g))
+        ACTION_MAP[(n+1,)] = ("%s:" % g, "Clip", g)
     last_trigger = True
     last_resting = True
     lastchange = time.time()
@@ -253,8 +188,10 @@ def main(video, audio, sensor):
 logging.basicConfig(level=logging.INFO)
 device = framebuffer.Framebuffer(1)
 v = video.Video(device, 128, 64)
-a = audio.Audio(glob.glob("PiLib/SoundNumbers/?.wav"))
-s = bme280.SensorBME280()
+a = audio.Audio(glob.glob("../SoundNumbers/?.wav"))
+d = bme280.I2CDevice(addr=0x76, debug=False)
+s = bme280.SensorBME280(d)
+c = sound_clips.SoundClips("/home/pi/AudioClips")
 
 webserver.RunServerInThread(8888, s)
-main(v, a, s)
+main(v, a, s, c)

@@ -107,8 +107,9 @@ def RunServerInThread(port, sensor):
     threading.Thread(target=RunServer, args=(port,)).start()
 
 if __name__ == "__main__":
-    import PiLib.bme280 as bme280
-    SENSOR = bme280.SensorBME280()
+    import Pytorinox.bme280 as bme280
+    device = bme280.I2CDevice(addr=0x76, debug=True)
+    SENSOR = bme280.SensorBME280(device)
     logging.basicConfig(level=logging.INFO)
     RunServer(port=9999)
     logging.info("exit server")
