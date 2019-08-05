@@ -56,7 +56,13 @@ class Task:
     def __init__(self, clips):
         self._active_task = None
         self.clips = clips
+        self.start = 0
         self.message = None
+
+    def GetMessage(self):
+        if self.start + 5.0 < time.time():
+            return None
+        return self.message
         
     def Shutdown(self):
         os.system("sudo shutdown now")
@@ -65,8 +71,9 @@ class Task:
     def Dispatch(self, numbers):
         msg, action, args = ACTION_MAP.get(tuple(numbers), DEFAULT_ACTION)
         self.message = msg
+        self.state = time.time()
         if msg is None:
-            logging.info("no action matc forh: %s", numbers)
+            logging.info("no action match for: %s", numbers)
             return
 
         print ("ACTION: ", action)
@@ -148,8 +155,9 @@ class Actions:
                 #               self.sensor.RenderMeasurements(),
                 #               DateString())                
         else:
-            if self.task.message:
-                msg1, msg2 = self.task.message.split(":")
+            m = self.task.GetMessage()
+            if m:
+                msg1, msg2 = m.split(":")
                 self.video.Message(msg1, msg2, DateString())
 
             else:
