@@ -17,7 +17,7 @@ import Pytorinox.morph as morph
 # ("miscfs_.ttf ", 12),
 # ("FreePixel.ttf", 12)]:
 
-
+MENU_FONT_HEIGHT = 14
 
 def Offset(t, image_dim, object_dim, speed=4.0):
     deltax = image_dim[0] - object_dim[0]
@@ -43,7 +43,7 @@ class Video:
         self._device = device
         self._last_screen = None
         self._font = ImageFont.truetype("../Fonts/code2000.ttf", 30)
-        self._menu_font = ImageFont.truetype("../Fonts/code2000.ttf", 12)
+        self._menu_font = ImageFont.truetype("../Fonts/code2000.ttf", MENU_FONT_HEIGHT)
         font_dali = morph.LoadMorphFont("Pytorinox/DaliFonts/", "E.xbm")
         self._dali_string = morph.DaliString(*font_dali)
         font_clock = morph.LoadMorphFont("Pytorinox/DaliFonts/", "G.xbm")
@@ -92,7 +92,7 @@ class Video:
         self._Clear()
         for i, msg in enumerate(msgs):
             x = 0
-            y = i * 12
+            y = i * MENU_FONT_HEIGHT
             if i >= 5:
                 x += 64
                 y -= 60 
